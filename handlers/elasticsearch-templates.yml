@@ -1,7 +1,7 @@
 ---
 
 - name: Ensure elasticsearch is started
-  service: name={{instance_init_script | basename}} state=started enabled=yes
+  service: name={{es_service_name}} state=started enabled=yes
 
 - name: Wait for elasticsearch to startup
   wait_for: host={% if es_config['network.host'] is defined %}{{es_config['network.host']}}{% else %}{{es_api_host}}{% endif %} port={% if es_config['http.port'] is defined %}{{es_config['http.port']}}{% else %}{{es_api_port}}{% endif %} delay=10
