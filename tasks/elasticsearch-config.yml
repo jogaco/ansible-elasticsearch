@@ -6,7 +6,6 @@
   file: path={{ item }} state=directory owner={{ es_user }} group={{ es_group }}
   with_items:
     - "{{pid_dir}}"
-    - "{{work_dir}}"
     - "{{log_dir}}"
     - "{{conf_dir}}"
 
@@ -43,9 +42,15 @@
 - name: Copy Systemd File for Instance
   template: src=systemd/elasticsearch.j2 dest={{instance_sysd_script}} mode=0644 force=yes
   when: use_system_d
-  notify: restart elasticsearch
+  notify:
+  - reload systemd configuration
+  - restart elasticsearch
 
 #Copy the logging.yml
-- name: Copy Logging.yml File for Instance
-  template: src=logging.yml.j2 dest={{conf_dir}}/logging.yml owner={{ es_user }} group={{ es_group }} mode=0644 force=yes
+- name: Copy log4j2.properties File for Instance
+  template: src=log4j2.properties.j2 dest={{conf_dir}}/logging.yml owner={{ es_user }} group={{ es_group }} mode=0644 force=yes
+  notify: restart elasticsearch
+
+- name: Copy jvm.options File for Instance
+  template: src=jvm.options.j2 dest={{conf_dir}}/jvm.options owner={{ es_user }} group={{ es_group }} mode=0644 force=yes
   notify: restart elasticsearch

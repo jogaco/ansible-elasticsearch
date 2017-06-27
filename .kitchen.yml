@@ -20,8 +20,22 @@ platforms:
       privileged: true
       provision_command:
         - apt-get update && apt-get install -y software-properties-common &&  add-apt-repository -y ppa:ansible/ansible
-        - apt-get update && apt-get -y -q install python-apt python-pycurl
+        - apt-get update && apt-get -y -q install python-apt python-pycurl python-pip
+        - pip install jmespath
       use_sudo: false
+      volume: <%=ENV['ES_XPACK_LICENSE_FILE']%>:/tmp/license.json
+  - name: ubuntu-16.04
+    driver_config:
+      image: dliappis/ubuntu-devopsci:16.04
+      privileged: true
+      provision_command:
+        - apt-get update && apt-get install -y software-properties-common &&  add-apt-repository -y ppa:ansible/ansible
+        - apt-get install -y -q net-tools
+        - apt-get update && apt-get -y -q install python-apt python-pycurl python-pip
+        - pip install jmespath
+      use_sudo: false
+      volume: <%=ENV['ES_XPACK_LICENSE_FILE']%>:/tmp/license.json
+      run_command: "/sbin/init"
   - name: debian-8
     driver_config:
       image: dliappis/debian-devopsci:8
@@ -33,6 +47,8 @@ platforms:
         - sed -ri 's/^#?PermitRootLogin .*/PermitRootLogin yes/' /etc/ssh/sshd_config
         - sed -ri 's/^#?PasswordAuthentication .*/PasswordAuthentication yes/' /etc/ssh/sshd_config
         - sed -ri 's/^#?UsePAM .*/UsePAM no/' /etc/ssh/sshd_config
+        - pip install jmespath
+      volume: <%=ENV['ES_XPACK_LICENSE_FILE']%>:/tmp/license.json
       use_sudo: false
       run_command: "/sbin/init"
   - name: centos-7
@@ -45,40 +61,36 @@ platforms:
         - rm /etc/yum.repos.d/epel*repo /etc/yum.repos.d/puppetlabs-pc1.repo
         - yum -y install initscripts
         - yum clean all
+        - pip install jmespath
+      volume: <%=ENV['ES_XPACK_LICENSE_FILE']%>:/tmp/license.json
       run_command: "/usr/sbin/init"
       privileged: true
       use_sudo: false
 
 suites:
-  - name: standard-2x
+  - name: standard-5x
     provisioner:
+      idempotency_test: true
       playbook: test/integration/standard.yml
     run_list:
     attributes:
-  - name: package-2x
+  - name: package-5x
     run_list:
     attributes:
-      extra_vars:
-        es_plugins:
-          - plugin: lmenezes/elasticsearch-kopf
-            version: master
     provisioner:
       playbook: test/integration/package.yml
-  - name: config-2x
+  - name: config-5x
     run_list:
     attributes:
     provisioner:
       playbook: test/integration/config.yml
-  - name: multi-2x
+  - name: multi-5x
     run_list:
     attributes:
-      extra_vars:
-        es_plugins:
-          - plugin: lmenezes/elasticsearch-kopf
-            version: master
     provisioner:
       playbook: test/integration/multi.yml
-  - name: xpack-2x
+      idempotency_test: true
+  - name: xpack-5x
     run_list:
     attributes:
     provisioner:
