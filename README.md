@@ -1,5 +1,68 @@
 # ansible-elasticsearch
-[![Ansible Galaxy](https://img.shields.io/badge/ansible--galaxy-elastic.elasticsearch-blue.svg)](https://galaxy.ansible.com/elastic/elasticsearch/)
+This is a fork of [elasticsearch/ansible-elasticsearch](https://github.com/elastic/ansible-elasticsearch)
+
+# Why this fork
+elastic.co recommends to run ES on machines with 64, 32 OR 16 GB of RAM, and to avoid large machines with multiple nodes:
+> At the same time, avoid the truly enormous machines. They often lead to imbalanced resource usage (for example, all the memory is being used, but none of the CPU) and can add logistical complexity if you have to run multiple nodes per machine.
+
+https://www.elastic.co/guide/en/elasticsearch/guide/current/hardware.html
+
+The original implementation of Ansible Role is geared towards machines running multiple nodes of ES, and adds a lot of unnecessary complexity to the daily admin of such deployments:
+ * Installed Service name: `node1_elasticsearch`
+ * Data dir: `/opt/elasticsearch/data/138.68.xx.xxx-node1`
+ * Logs dir: `/opt/elasticsearch/logs/138.68.xx.xxx-node1`
+ * Work dir: `/opt/elasticsearch/temp/138.68.xx.xxx-node1`
+
+You can check here more details: https://github.com/elastic/ansible-elasticsearch/issues/205
+
+This version installs ES as similar as a manual installation would do it:
+ * Data dir: `/opt/elasticsearch/data`
+ * Logs dir: `/var/logs/elasticsearch`
+ * Service name: `elasticsearch`
+  
+ ## An example of a Basic ES Configuration
+```
+---
+- name: Configure servers with Elastic Search
+# ansible-playbook -i hosts.ini es.yml --user deploy --ask-sudo-pass
+
+  hosts: newservers
+  become: yes
+
+  vars:
+    es_major_version: "5.x"
+    es_version: "5.3.0"
+    es_heap_size: 512m
+    es_java: openjdk-8-jre-headless
+    es_service_name: "elasticsearch"
+    es_version_lock: true
+    es_start_service: true
+    es_plugins_reinstall: true
+    es_instance_name: "node1"
+    # es_data_dirs must be an array otherwise expanded as /,h,o,m,e,... 
+    es_data_dirs: ["/home/elasticsearch"]
+    es_plugins:
+      - plugin: repository-s3
+
+  vars_files:
+    - passwd.yml
+
+  roles:
+    #expand to all available parameters
+    - { role: elasticsearch,
+          es_config: {
+            bootstrap.memory_lock: true,
+            # index.merge.scheduler.max_thread_count: 1,
+
+            cloud: { aws: { access_key: "{{ aws_access }}", secret_key: "{{ aws_secret }}", region: eu-west-1} },
+            script.engine.groovy.inline.aggs: on,
+            script.engine.groovy.inline.update: on,
+            script.engine.groovy.inline.search: on
+          }
+      }
+
+```
+
 
 **THIS ROLE IS FOR 5.x. FOR 2.x SUPPORT PLEASE USE THE 2.x BRANCH.**
 
